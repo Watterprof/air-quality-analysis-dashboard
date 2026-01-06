@@ -11,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-
 st.markdown(
     """
 <style>
@@ -23,6 +22,13 @@ st.markdown(
   color: #e9eef6;
 }
 
+/* Main container spacing (important for mobile) */
+.main .block-container {
+  padding-top: 1.25rem;
+  padding-bottom: 2.25rem;
+  max-width: 1200px;
+}
+
 /* Sidebar */
 section[data-testid="stSidebar"] {
   background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
@@ -30,9 +36,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* Headings */
-h1, h2, h3 {
-  letter-spacing: 0.2px;
-}
+h1, h2, h3 { letter-spacing: 0.2px; }
 
 /* Card */
 .card {
@@ -50,7 +54,7 @@ h1, h2, h3 {
   margin-bottom: 6px;
 }
 
-/* KPI Value (fix white/too faint issue) */
+/* KPI Value */
 .kpi-value {
   font-size: 2.0rem;
   font-weight: 800;
@@ -92,9 +96,44 @@ h1, h2, h3 {
   opacity: 0.85;
 }
 
+/* Status note (block so margin works) */
+.status-note {
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+/* Footer */
+.footer {
+  color: #9aa4b2;
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
 /* Plotly tweak */
-.js-plotly-plot .plotly .main-svg {
-  border-radius: 16px;
+.js-plotly-plot .plotly .main-svg { border-radius: 16px; }
+
+/* MOBILE FIX: prevent overlap/giant header */
+@media (max-width: 768px) {
+  .main .block-container {
+    padding-top: 0.75rem !important;
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
+    max-width: 100% !important;
+  }
+  h1 { font-size: 1.55rem !important; line-height: 1.15 !important; }
+  h2 { font-size: 1.15rem !important; }
+  h3 { font-size: 1.0rem !important; }
+
+  .card { padding: 12px 14px; border-radius: 16px; }
+  .kpi-value { font-size: 1.55rem !important; }
+
+  section[data-testid="stSidebar"] {
+    border-right: 1px solid rgba(255,255,255,0.10);
+  }
 }
 </style>
 """,
@@ -135,7 +174,7 @@ UNIT_MAP = {
     "PM10": "µg/m³",
     "SO2": "µg/m³",
     "NO2": "µg/m³",
-    "CO": "µg/m³",   
+    "CO": "µg/m³",
     "O3": "µg/m³",
 }
 
@@ -166,7 +205,6 @@ def format_num(x, decimals=1):
 
 
 def get_quantile_category(values: pd.Series, v: float) -> str:
-    """Kategori INTERNAL berdasarkan kuantil (20%, 40%, 60%, 80%)."""
     values = values.dropna()
     if values.empty or np.isnan(v):
         return "—"
@@ -183,20 +221,18 @@ def get_quantile_category(values: pd.Series, v: float) -> str:
 
 
 def get_rank_info(mean_by_station: pd.Series, station_name: str):
-    """Ranking INTERNAL: semakin kecil mean -> semakin baik."""
     s = mean_by_station.dropna().sort_values(ascending=True)
     if station_name not in s.index:
         return None
     rank = int(np.where(s.index == station_name)[0][0]) + 1
     total = len(s)
-    percentile = 100 * (1 - (rank - 1) / max(total - 1, 1)) 
+    percentile = 100 * (1 - (rank - 1) / max(total - 1, 1))
     return rank, total, percentile
 
 
 st.markdown(
     """
-# Air Quality Dashboard (Air Quality Dataset)   
-<br>
+# Air Quality Dashboard (Air Quality Dataset)
 Dashboard ini menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarkan
 <b>data pengukuran stasiun dalam dataset</b>.<br><br>
 
@@ -210,11 +246,11 @@ Dashboard ini menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarka
 <i>Catatan:</i> seluruh indikator kualitas udara bersifat
 <b>relatif antar stasiun</b> dan tidak mengacu pada standar eksternal
 (WHO / EPA / IQAir).
-</div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
-
 
 with st.sidebar:
     st.markdown("## ⚙️ Filter")
@@ -242,7 +278,7 @@ with st.sidebar:
 
     with st.expander("📘 Glosarium"):
         for k in POLLUTANTS:
-            st.markdown(f"**{k}** — {GLOSSARY[k]}")
+            st.markdown(f"• **{k}** — {GLOSSARY[k]}")
 
 if not selected_stations:
     st.warning("Pilih minimal 1 stasiun di sidebar.")
@@ -263,23 +299,11 @@ if dff.empty:
 
 unit = UNIT_MAP.get(pollutant, "")
 
-
-st.markdown("""
-<style>
-.status-note {
-    margin-bottom: 1.25rem; /* kasih jarak ke KPI cards */
-    font-size: 0.9rem;
-    color: #cbd5e1;
-}
-</style>
-""", unsafe_allow_html=True)
-
 st.markdown(
-    "<span class='status-note'>Status pada dashboard ini dihitung dari: "
-    "<b>Rata-rata (periode terpilih)</b> • <b>relatif antar stasiun</b></span>",
+    "<div class='status-note'>Status pada dashboard ini dihitung dari: "
+    "<b>Rata-rata (periode terpilih)</b> • <b>relatif antar stasiun</b></div>",
     unsafe_allow_html=True
 )
-
 
 latest_per_station = (
     dff.sort_values("datetime")
@@ -303,7 +327,7 @@ if len(selected_stations) == 1:
     info = get_rank_info(mean_by_station, st_name)
     if info:
         r, total, pct = info
-        frac = (r - 1) / max(total - 1, 1)  
+        frac = (r - 1) / max(total - 1, 1)
         bucket = int(np.floor(frac * 5))
         bucket = min(max(bucket, 0), 4)
         status_label = CATEGORY_LABELS[bucket]
@@ -440,7 +464,9 @@ with left:
 with right:
     st.markdown("## 🧩 Distribusi Kategori (Internal)")
     st.markdown(
-        "<span class='small-note'>Grafik ini menunjukkan bagaimana kondisi kualitas udara (berdasarkan polutan terpilih) tersebar dalam beberapa kategori selama periode dan stasiun yang dipilih.</span>",
+        "<span class='small-note'>Grafik ini menunjukkan proporsi kondisi <b>relatif</b> (berdasarkan kuantil internal) "
+        "untuk polutan terpilih pada periode & stasiun yang dipilih. "
+        "Semakin ke <b>Terburuk</b> berarti nilainya relatif lebih tinggi dibanding stasiun lain di dataset pada periode yang sama.</span>",
         unsafe_allow_html=True,
     )
 
@@ -516,7 +542,7 @@ st.markdown(
 
 rank_df = (
     df_time.groupby("station")[pollutant].mean()
-    .sort_values(ascending=True)  
+    .sort_values(ascending=True)
     .reset_index()
     .rename(columns={pollutant: f"Rata-rata {pollutant}"})
 )
@@ -540,8 +566,7 @@ if len(selected_stations) == 1:
                 gauge={
                     "axis": {"visible": False},
                     "bar": {"color": "rgba(255,255,255,0.55)"},
-                    "bgcolor": "rgba(255,255,255,0.07)",
-                },
+                    "bgcolor": "rgba(255,255,255,0.07)"},
             )
         )
         fig_ind.update_layout(
@@ -592,27 +617,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-st.markdown("""
-<style>
-.footer {
-    color: #9aa4b2;
-    font-size: 0.75rem;
-    text-align: center;
-    margin-top: 3rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255,255,255,0.08);
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-/* Mobile fix */
-@media (max-width: 768px) {
-  .block-container { padding-top: 1rem !important; }
-  h1 { font-size: 1.6rem !important; line-height: 1.2 !important; }
-  h2 { font-size: 1.2rem !important; }
-}
-</style>
-""", unsafe_allow_html=True)
