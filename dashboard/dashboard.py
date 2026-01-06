@@ -9,8 +9,7 @@ import plotly.graph_objects as go
 # CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="Air Quality Dashboard — Public View (Internal Dataset)",
-    page_icon="🌫️",
+    page_title="Air Quality Dashboard (Air Quality Dataset)",
     layout="wide",
 )
 
@@ -213,12 +212,24 @@ def get_rank_info(mean_by_station: pd.Series, station_name: str):
 # =========================================================
 st.markdown(
     """
-# 🌫️ Air Quality Dashboard — Public View  
-<span class="small-note">Dashboard ini **murni berbasis dataset internal** (tanpa standar eksternal seperti WHO/EPA/IQAir).  
-Semua label “baik/buruk” pada dashboard adalah **relatif antar stasiun di dataset ini**.</span>
-""",
-    unsafe_allow_html=True,
-)
+# Air Quality Dashboard (Air Quality Dataset)   
+<br>
+Dashboard ini menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarkan
+<b>data pengukuran stasiun dalam dataset</b>.<br><br>
+
+<b>Fungsi utama dashboard:</b>
+<ul>
+<li>Membandingkan tingkat polusi antar stasiun</li>
+<li>Menganalisis tren polutan dari waktu ke waktu</li>
+<li>Mengidentifikasi area yang relatif lebih bersih atau lebih tercemar</li>
+</ul>
+
+<i>Catatan:</i> seluruh indikator kualitas udara bersifat
+<b>relatif antar stasiun</b> dan tidak mengacu pada standar eksternal
+(WHO / EPA / IQAir).
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
 # =========================================================
@@ -248,7 +259,7 @@ with st.sidebar:
     st.markdown("### ℹ️ Info Polutan")
     st.caption(GLOSSARY.get(pollutant, ""))
 
-    with st.expander("📘 Kamus Polutan (klik)"):
+    with st.expander("📘 Glosarium"):
         for k in POLLUTANTS:
             st.markdown(f"**{k}** — {GLOSSARY[k]}")
 
@@ -275,12 +286,24 @@ unit = UNIT_MAP.get(pollutant, "")
 # =========================================================
 # STATUS BASIS (average only by request)
 # =========================================================
+
+
+st.markdown("""
+<style>
+.status-note {
+    margin-bottom: 1.25rem; /* kasih jarak ke KPI cards */
+    font-size: 0.9rem;
+    color: #cbd5e1;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown(
-    """
-<div class="badge">✅ Status pada dashboard ini dihitung dari: <b>Rata-rata (periode terpilih)</b> &nbsp; • &nbsp; <span class="small-note">relatif antar stasiun</span></div>
-""",
-    unsafe_allow_html=True,
+    "<span class='status-note'>Status pada dashboard ini dihitung dari: "
+    "<b>Rata-rata (periode terpilih)</b> • <b>relatif antar stasiun</b></span>",
+    unsafe_allow_html=True
 )
+
 
 # =========================================================
 # KPI ROW
@@ -321,7 +344,7 @@ if len(selected_stations) == 1:
         bucket = min(max(bucket, 0), 4)
         status_label = CATEGORY_LABELS[bucket]
         rank_badge_text = f"Peringkat {r}/{total} (≈{pct:.0f} persentil terbaik)"
-        status_note = "Ini perbandingan relatif antar stasiun dalam dataset, bukan standar eksternal."
+        status_note = "Ini perbandingan relatif antar stasiun dalam dataset."
 else:
     # if multiple stations selected, show category based on internal quantile of mean values
     # use mean across selected stations (their mean per station averaged)
@@ -462,8 +485,7 @@ with left:
 with right:
     st.markdown("## 🧩 Distribusi Kategori (Internal)")
     st.markdown(
-        "<span class='small-note'>Kategori dibuat dari <b>kuantil internal</b> (bukan standar luar). "
-        "Tujuannya hanya memudahkan pembacaan proporsi kondisi relatif.</span>",
+        "<span class='small-note'>Grafik ini menunjukkan bagaimana kondisi kualitas udara (berdasarkan polutan terpilih) tersebar dalam beberapa kategori selama periode dan stasiun yang dipilih.</span>",
         unsafe_allow_html=True,
     )
 
@@ -621,13 +643,25 @@ else:
 # =========================================================
 # FOOTER NOTE
 # =========================================================
-st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 st.markdown(
     """
-<span class="small-note">
-<b>Catatan penting:</b> Dashboard ini menggunakan kategori & status <b>relatif internal</b>.
-Jika kamu butuh “sehat absolut”, itu harus pakai standar eksternal (WHO/EPA/IQAir) — tapi sesuai request kamu, ini sengaja tidak digunakan.
-</span>
-""",
-    unsafe_allow_html=True,
+    <div class="footer">
+        Air Quality Dashboard • Analisis kualitas udara berbasis dataset internal stasiun<br>
+        Seluruh indikator & kategori bersifat <b>relatif antar stasiun dan periode</b> dalam dataset ini
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
+st.markdown("""
+<style>
+.footer {
+    color: #9aa4b2;
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+</style>
+""", unsafe_allow_html=True)
