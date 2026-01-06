@@ -5,17 +5,12 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 
-# =========================================================
-# CONFIG
-# =========================================================
 st.set_page_config(
     page_title="Air Quality Dashboard (Air Quality Dataset)",
     layout="wide",
 )
 
-# =========================================================
-# STYLES (fix KPI text visibility + nicer cards)
-# =========================================================
+
 st.markdown(
     """
 <style>
@@ -105,16 +100,11 @@ h1, h2, h3 {
     unsafe_allow_html=True,
 )
 
-# =========================================================
-# DATA LOADING (robust path)
-# =========================================================
 @st.cache_data(show_spinner=False)
 def load_data(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
-    # standardize columns
     df.columns = [c.strip() for c in df.columns]
 
-    # required columns
     if "datetime" not in df.columns:
         raise ValueError("Kolom 'datetime' tidak ditemukan di CSV. Pastikan hasil cleaning sudah membuat kolom datetime.")
 
@@ -138,16 +128,13 @@ if not os.path.exists(DEFAULT_CSV):
 
 df = load_data(DEFAULT_CSV)
 
-# =========================================================
-# CONSTANTS
-# =========================================================
 POLLUTANTS = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]
 UNIT_MAP = {
     "PM2.5": "µg/m³",
     "PM10": "µg/m³",
     "SO2": "µg/m³",
     "NO2": "µg/m³",
-    "CO": "µg/m³",   # dataset kamu biasanya mg/m³ atau µg/m³, tapi kita jangan klaim eksternal
+    "CO": "µg/m³",   
     "O3": "µg/m³",
 }
 
@@ -160,8 +147,6 @@ GLOSSARY = {
     "O3":    "Ozon di permukaan (gas). Terbentuk dari reaksi fotokimia (bukan ozon stratosfer).",
 }
 
-# NOTE: kategori ini dibuat INTERNAL (bukan AQI luar), hanya untuk memudahkan pembacaan dashboard.
-# Kita pakai kuantil internal per polutan (berdasarkan seluruh dataset / filter terpilih).
 CATEGORY_LABELS = ["Terbaik", "Lebih Baik", "Sedang", "Lebih Buruk", "Terburuk"]
 
 
@@ -203,13 +188,10 @@ def get_rank_info(mean_by_station: pd.Series, station_name: str):
         return None
     rank = int(np.where(s.index == station_name)[0][0]) + 1
     total = len(s)
-    percentile = 100 * (1 - (rank - 1) / max(total - 1, 1))  # rank 1 => 100%
+    percentile = 100 * (1 - (rank - 1) / max(total - 1, 1)) 
     return rank, total, percentile
 
 
-# =========================================================
-# HEADER
-# =========================================================
 st.markdown(
     """
 # Air Quality Dashboard (Air Quality Dataset)   
@@ -232,9 +214,7 @@ Dashboard ini menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarka
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
-# =========================================================
-# SIDEBAR FILTERS
-# =========================================================
+
 with st.sidebar:
     st.markdown("## ⚙️ Filter")
 
@@ -263,7 +243,6 @@ with st.sidebar:
         for k in POLLUTANTS:
             st.markdown(f"**{k}** — {GLOSSARY[k]}")
 
-# guard empty station selection
 if not selected_stations:
     st.warning("Pilih minimal 1 stasiun di sidebar.")
     st.stop()
@@ -283,10 +262,6 @@ if dff.empty:
 
 unit = UNIT_MAP.get(pollutant, "")
 
-# =========================================================
-# STATUS BASIS (average only by request)
-# =========================================================
-
 
 st.markdown("""
 <style>
@@ -305,14 +280,6 @@ st.markdown(
 )
 
 
-# =========================================================
-# KPI ROW
-# =========================================================
-# For KPI, we use:
-# - latest value per selected stations (mean of latest per station)
-# - mean value over period (all rows)
-# - min/max over period
-# - relative rank based on station mean (if single station selected)
 latest_per_station = (
     dff.sort_values("datetime")
        .groupby("station")[pollutant]
@@ -323,12 +290,10 @@ mean_value = dff[pollutant].mean()
 min_value = dff[pollutant].min()
 max_value = dff[pollutant].max()
 
-# Relative status: if single station, rank vs all stations in same time range (internal)
 rank_badge_text = None
 status_label = None
 status_note = None
 
-# compute mean by station for this time filter (but across ALL stations available in df for fairness)
 df_time = df[df["datetime"].between(start_ts, end_ts)].copy()
 mean_by_station = df_time.groupby("station")[pollutant].mean()
 
@@ -337,17 +302,13 @@ if len(selected_stations) == 1:
     info = get_rank_info(mean_by_station, st_name)
     if info:
         r, total, pct = info
-        # map rank to internal category label (quintiles by rank)
-        # rank 1 best -> "Terbaik"
-        frac = (r - 1) / max(total - 1, 1)  # 0..1
+        frac = (r - 1) / max(total - 1, 1)  
         bucket = int(np.floor(frac * 5))
         bucket = min(max(bucket, 0), 4)
         status_label = CATEGORY_LABELS[bucket]
         rank_badge_text = f"Peringkat {r}/{total} (≈{pct:.0f} persentil terbaik)"
         status_note = "Ini perbandingan relatif antar stasiun dalam dataset."
 else:
-    # if multiple stations selected, show category based on internal quantile of mean values
-    # use mean across selected stations (their mean per station averaged)
     sel_mean = dff.groupby("station")[pollutant].mean().mean()
     status_label = get_quantile_category(mean_by_station, sel_mean)
     rank_badge_text = "Multi-stasiun: status ditentukan relatif dari distribusi stasiun (internal)."
@@ -405,9 +366,6 @@ with c4:
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
-# =========================================================
-# SECTION: TREND
-# =========================================================
 st.markdown("## 📉 Tren Polutan")
 st.markdown(
     f"<span class='small-note'>Apa yang ditampilkan: perubahan <b>{pollutant}</b> sepanjang waktu pada stasiun & rentang tanggal yang dipilih. "
@@ -415,7 +373,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# resample
 freq = {"Harian": "D", "Mingguan": "W", "Bulanan": "M"}[resolution]
 tmp = dff[["datetime", "station", pollutant]].dropna().copy()
 tmp = tmp.set_index("datetime")
@@ -449,9 +406,6 @@ st.plotly_chart(fig_trend, use_container_width=True)
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
-# =========================================================
-# SECTION: DAILY PATTERN + CATEGORY DISTRIBUTION
-# =========================================================
 left, right = st.columns([1, 1], gap="large")
 
 with left:
@@ -489,12 +443,8 @@ with right:
         unsafe_allow_html=True,
     )
 
-    # internal categories based on quantiles of ALL station means in selected time window
-    # -> apply to rows of selected subset for proportion
-    # threshold computed from entire df_time distribution of the pollutant (more stable)
     values_ref = df_time[pollutant].dropna()
 
-    # define bins by quantiles (5 bins)
     if values_ref.empty:
         st.info("Data referensi kosong untuk membuat kategori.")
     else:
@@ -527,9 +477,6 @@ with right:
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
-# =========================================================
-# SECTION: HEATMAP (Month vs Hour) for PM2.5 only (or selected pollutant)
-# =========================================================
 st.markdown("## 🧩 Heatmap (Bulan vs Jam) — Pola Musiman + Harian")
 st.markdown(
     "<span class='small-note'>Heatmap ini membantu melihat pola gabungan: "
@@ -560,9 +507,6 @@ st.plotly_chart(fig_heat, use_container_width=True)
 
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
-# =========================================================
-# SECTION: RANKING STATIONS (fix jumbo bar when only 1 station)
-# =========================================================
 st.markdown("## 🏁 Ranking Stasiun (Relatif Internal)")
 st.markdown(
     "<span class='small-note'>Ranking dihitung dari <b>rata-rata periode terpilih</b>. Semakin kecil rata-rata → semakin baik (lebih sehat secara relatif).</span>",
@@ -571,7 +515,7 @@ st.markdown(
 
 rank_df = (
     df_time.groupby("station")[pollutant].mean()
-    .sort_values(ascending=True)  # best first
+    .sort_values(ascending=True)  
     .reset_index()
     .rename(columns={pollutant: f"Rata-rata {pollutant}"})
 )
@@ -586,7 +530,6 @@ if len(selected_stations) == 1:
         mean_val = row[f"Rata-rata {pollutant}"].iloc[0]
         pct = 100 * (1 - (r - 1) / max(total - 1, 1))
 
-        # show compact indicator instead of jumbo bar
         fig_ind = go.Figure(
             go.Indicator(
                 mode="number+gauge",
@@ -613,7 +556,6 @@ if len(selected_stations) == 1:
     else:
         st.info("Stasiun tidak ditemukan dalam ranking (cek data/filter).")
 else:
-    # multiple station selection -> show horizontal ranking bar (compact)
     rank_df_show = rank_df.copy()
     rank_df_show["Kelompok Terpilih"] = rank_df_show["station"].isin(selected_stations)
 
@@ -640,9 +582,6 @@ else:
         csv = rank_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download ranking (CSV)", data=csv, file_name="ranking_station.csv", mime="text/csv")
 
-# =========================================================
-# FOOTER NOTE
-# =========================================================
 st.markdown(
     """
     <div class="footer">

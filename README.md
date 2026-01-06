@@ -1,15 +1,9 @@
-# 🌫️ Air Quality Dashboard — Public View
+# Air Quality Dashboard — Public View
 
 Dashboard ini menyajikan **analisis dan visualisasi kualitas udara** berdasarkan **dataset internal pengukuran stasiun**.  
-Aplikasi dibuat sebagai media eksplorasi data untuk memahami **pola, tren, dan perbandingan kualitas udara antar stasiun dan waktu**.
+Aplikasi dibuat sebagai media eksplorasi data untuk memahami **pola, tren, dan perbandingan kualitas udara antar stasiun dan waktu**
 
-⚠️ **Catatan penting**  
-Seluruh indikator, kategori, dan status kualitas udara pada dashboard ini **bersifat relatif antar stasiun di dalam dataset**.  
-Dashboard **tidak menggunakan standar eksternal** seperti WHO, EPA, atau IQAir, serta **bukan alat diagnosis kesehatan**.
-
----
-
-## 🎯 Tujuan Dashboard
+## Tujuan Dashboard
 Dashboard ini bertujuan untuk:
 - Membandingkan kualitas udara antar stasiun pengukuran
 - Menganalisis tren polutan dari waktu ke waktu
@@ -20,7 +14,7 @@ Dashboard ini cocok digunakan sebagai **alat eksplorasi data** dan **pendukung a
 
 ---
 
-## 📊 Fitur Utama
+## Fitur Utama
 - **Filter Interaktif**
   - Pemilihan stasiun
   - Rentang tanggal
@@ -36,9 +30,4 @@ Dashboard ini cocok digunakan sebagai **alat eksplorasi data** dan **pendukung a
   - Distribusi kategori relatif
   - Heatmap (bulan vs jam)
   - Ranking stasiun berdasarkan rata-rata polutan
-
----
-
-## 🗂️ Struktur Direktori
-Struktur folder yang digunakan pada project ini:
 
