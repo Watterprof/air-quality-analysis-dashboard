@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 st.set_page_config(
     page_title="Air Quality Dashboard (Air Quality Dataset)",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 
@@ -601,6 +602,17 @@ st.markdown("""
     margin-top: 3rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(255,255,255,0.08);
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Mobile fix */
+@media (max-width: 768px) {
+  .block-container { padding-top: 1rem !important; }
+  h1 { font-size: 1.6rem !important; line-height: 1.2 !important; }
+  h2 { font-size: 1.2rem !important; }
 }
 </style>
 """, unsafe_allow_html=True)
