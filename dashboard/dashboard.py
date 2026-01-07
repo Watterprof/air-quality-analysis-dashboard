@@ -233,19 +233,8 @@ def get_rank_info(mean_by_station: pd.Series, station_name: str):
 st.markdown(
     """
 # Air Quality Dashboard (Air Quality Dataset)
-Dashboard ini menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarkan
+Menyajikan <b>ringkasan dan analisis kualitas udara</b> berdasarkan
 <b>data pengukuran stasiun dalam dataset</b>.<br><br>
-
-<b>Fungsi utama dashboard:</b>
-<ul>
-<li>Membandingkan tingkat polusi antar stasiun</li>
-<li>Menganalisis tren polutan dari waktu ke waktu</li>
-<li>Mengidentifikasi area yang relatif lebih bersih atau lebih tercemar</li>
-</ul>
-
-<i>Catatan:</i> seluruh indikator kualitas udara bersifat
-<b>relatif antar stasiun</b> dan tidak mengacu pada standar eksternal
-(WHO / EPA / IQAir).
 """,
     unsafe_allow_html=True,
 )
