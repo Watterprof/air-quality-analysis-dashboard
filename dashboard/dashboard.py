@@ -229,6 +229,18 @@ def get_rank_info(mean_by_station: pd.Series, station_name: str):
     percentile = 100 * (1 - (rank - 1) / max(total - 1, 1))
     return rank, total, percentile
 
+def classify_aqi(pm25_value):
+    if pm25_value <= 12.0:
+        return 'Sehat'
+    elif pm25_value <= 35.4:
+        return 'Sedang'
+    elif pm25_value <= 55.4:
+        return 'Tidak Sehat (Sensitif)'
+    elif pm25_value <= 150.4:
+        return 'Buruk'
+    else:
+        return 'Sangat Buruk'
+    
 
 st.markdown(
     """
@@ -451,46 +463,48 @@ with left:
     st.plotly_chart(fig_hour, use_container_width=True)
 
 with right:
-    st.markdown("## 🧩 Distribusi Kategori (Internal)")
+    st.markdown("## 📊 Analisis Lanjutan: Tingkat Kualitas Udara")
     st.markdown(
-        "<span class='small-note'>Grafik ini menunjukkan proporsi kondisi <b>relatif</b> (berdasarkan kuantil internal) "
-        "untuk polutan terpilih pada periode & stasiun yang dipilih. "
-        "Semakin ke <b>Terburuk</b> berarti nilainya relatif lebih tinggi dibanding stasiun lain di dataset pada periode yang sama.</span>",
+        "<span class='small-note'>Grafik ini menunjukkan klasifikasi kualitas udara berdasarkan konsentrasi <b>"
+        f"{pollutant}</b> menggunakan standar kategori kesehatan (AQI).</span>",
         unsafe_allow_html=True,
     )
 
-    values_ref = df_time[pollutant].dropna()
-
-    if values_ref.empty:
-        st.info("Data referensi kosong untuk membuat kategori.")
+    if pollutant == 'PM2.5':
+        bins = [0, 12, 35.4, 55.4, 150.4, 250.4, 500]
+        labels = ['Sehat', 'Sedang', 'Tidak Sehat (Sensitif)', 'Buruk', 'Sangat Buruk', 'Berbahaya']
+        colors = ['#2ecc71', '#f1c40f', '#e67e22', '#e74c3c', '#8e44ad', '#c0392b']
     else:
-        q = values_ref.quantile([0, 0.2, 0.4, 0.6, 0.8, 1.0]).values
-        q = np.unique(q)
-        if len(q) < 3:
-            st.info("Variasi data terlalu kecil untuk membentuk kategori.")
-        else:
-            labels = CATEGORY_LABELS[: max(len(q) - 1, 1)]
-            cats = pd.cut(dff[pollutant], bins=q, labels=labels, include_lowest=True)
-            prop = cats.value_counts(normalize=True).reindex(labels, fill_value=0).reset_index()
-            prop.columns = ["Kategori", "Proporsi"]
+        bins = [0, 20, 50, 100, 150, 200, 1000]
+        labels = ['Sangat Baik', 'Baik', 'Sedang', 'Buruk', 'Sangat Buruk', 'Bahaya']
+        colors = px.colors.sequential.Reds
 
-            fig_cat = px.bar(
-                prop,
-                x="Kategori",
-                y="Proporsi",
-                labels={"Proporsi": "Proporsi", "Kategori": "Kategori"},
-                title=f"Proporsi Kategori {pollutant} (Periode & Stasiun Terpilih)",
-            )
-            fig_cat.update_layout(
-                height=380,
-                margin=dict(l=10, r=10, t=60, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.02)",
-                font=dict(color="#E9EEF6"),
-                yaxis=dict(tickformat=".0%"),
-            )
-            st.plotly_chart(fig_cat, use_container_width=True)
+    dff['aqi_status'] = pd.cut(dff[pollutant], bins=bins, labels=labels, include_lowest=True)
+    prop = dff['aqi_status'].value_counts(normalize=True).reindex(labels, fill_value=0).reset_index()
+    prop.columns = ["Kategori", "Proporsi"]
 
+    fig_cat = px.bar(
+        prop,
+        x="Kategori",
+        y="Proporsi",
+        color="Kategori",
+        color_discrete_sequence=colors if pollutant == 'PM2.5' else None,
+        title=f"Distribusi Tingkat Kesehatan {pollutant}",
+    )
+    
+    fig_cat.update_layout(
+        height=380,
+        showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,255,255,0.02)",
+        font=dict(color="#E9EEF6"),
+        yaxis=dict(tickformat=".0%"),
+    )
+    st.plotly_chart(fig_cat, use_container_width=True)
+
+    most_common = prop.loc[prop['Proporsi'].idxmax(), 'Kategori']
+    percentage = prop['Proporsi'].max() * 100
+    
 st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
 
 st.markdown("## 🧩 Heatmap (Bulan vs Jam) — Pola Musiman + Harian")
